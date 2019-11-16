@@ -51,12 +51,17 @@ export default class GitHubController {
 	/**
 	 * List of all commits (sha and author email) in a repo
 	 * @param repo
+	 * @param since
+	 * @param until
 	 */
-	public async getCommits(repo: IRepo): Promise<IShortCommit[]> {
+	public async getCommits(repo: IRepo, since?: string, until?: string): Promise<IShortCommit[]> {
+		since = since ? new Date(since).toISOString() : since;
+		until = until ? new Date(until).toISOString() : until;
+		
 		const endpoint = `/repos/${repo.fullName}/commits`;
 		let commits = [], data, i = 1;
 		do {
-			data = await GitHubController.get(endpoint, {per_page: 100, page: i++});
+			data = await GitHubController.get(endpoint, {per_page: 100, page: i++, since, until});
 			commits = commits.concat(data);
 		} while (data.length > 0);
 		return commits.map(commit => ({
@@ -87,10 +92,12 @@ export default class GitHubController {
 	/**
 	 * Gets all authors in a repo and their contributions
 	 * @param repo The repo to inspect
+	 * @param since Date to start looking at commits
+	 * @param until Date to stop looking at commits
 	 * @param match If match is present, only file changes where the filename matches match will be counted
 	 */
-	public async getAuthors(repo: IRepo, match?: RegExp): Promise<IAuthorStatistics[]> {
-		const shortCommits: IShortCommit[] = await this.getCommits(repo);
+	public async getAuthors(repo: IRepo, since?: string, until?: string, match?: RegExp): Promise<IAuthorStatistics[]> {
+		const shortCommits: IShortCommit[] = await this.getCommits(repo, since, until);
 		const promises = shortCommits.map(commit => this.getCommitDetails(repo, commit));
 		const commits = await Promise.all(promises);
 

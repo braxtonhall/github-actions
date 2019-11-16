@@ -6,9 +6,9 @@ import * as fs from "fs-extra";
 	// Make a controller
 	const ghc = new GitHubController();
 	// Get every repo
-	const repos = await ghc.listRepos(/^project_team/);
+	const repos = await ghc.listRepos(/^project_team000/);
 	// For each repo, get all the Authors, but only count contributions for files that end in .ts
-	const promises = repos.map(repo => (async() => ({name: repo.name, stats: await ghc.getAuthors(repo, /\.ts$/)}))());
+	const promises = repos.map(repo => (async() => ({name: repo.name, stats: await ghc.getAuthors(repo, undefined, undefined, /\.ts$/)}))());
 	const stats = await Promise.all(promises);
 	
 	const date = new Date();

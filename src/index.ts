@@ -31,7 +31,7 @@ import * as fs from "fs-extra";
 	// Saving
 	await Promise.all(commits.map((commit: any) => fs.outputFile(
 		`./runs/${year}${month}${day}/${commit.name}.csv`, 
-		"SHA,ID,EMAIL\n" + commit.commits.map(c => `${c.sha},${c.githubId},${c.authorEmail}`).join("\n"))
+		"SHA,DATE,ID,EMAIL\n" + commit.commits.map(c => `${c.sha},${c.date},${c.githubId},${c.authorEmail}`).join("\n"))
 	));
 	console.log("Done!");
 })();

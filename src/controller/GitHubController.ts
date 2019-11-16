@@ -3,6 +3,12 @@ import {IAuthorStatistics, ICommit, IContributorStatistics, IRepo, IShortCommit}
 import axios from "axios";
 
 export default class GitHubController {
+	/**
+	 * Lists all the repos in an organisation.
+	 * The default org is set in an environment variable, but can be overridden with the org param
+	 * @param match if this is present, only repos whose name pass the match regex test will be returned
+	 * @param org the organisation from which to list repos
+	 */
 	public async listRepos(match?: RegExp, org?: string): Promise<IRepo[]> {
 		org = org || Config.getInstance().get(ConfigKey.defaultOrg);
 		let repos = [], data, i = 1;
@@ -16,7 +22,16 @@ export default class GitHubController {
 		}
 		return repos;
 	}
-	
+
+	/**
+	 * Gets the approximate stats on a repo like from the Insights tab of a GitHub repo
+	 * Statistics are from around the last two months
+	 * Statistics ONLY apply to GitHub Enterprise users.
+	 * 		If an Author is pushing from an username not recognized by the Enterprise account
+	 * 		they will be omitted
+	 * This is the fastest way to get a large amount decent of data	
+	 * @param repo the repo to examine
+	 */
 	public async getStatistics(repo: IRepo): Promise<IContributorStatistics[]> {
 		const endpoint = `/repos/${repo.fullName}/stats/contributors`;
 		const contributors = await GitHubController.get(endpoint);
@@ -32,7 +47,11 @@ export default class GitHubController {
 			}))
 		}));
 	}
-	
+
+	/**
+	 * List of all commits (sha and author email) in a repo
+	 * @param repo
+	 */
 	public async getCommits(repo: IRepo): Promise<IShortCommit[]> {
 		const endpoint = `/repos/${repo.fullName}/commits`;
 		let commits = [], data, i = 1;
@@ -45,7 +64,12 @@ export default class GitHubController {
 			authorEmail: commit.commit.author.email,
 		}));
 	}
-	
+
+	/**
+	 * Gets details on a single commit (every file changed and their additions/deletions)
+	 * @param repo Repo to which the commit belongs
+	 * @param commit The commit object onto which data will be appended
+	 */
 	public async getCommitDetails(repo: IRepo, commit: IShortCommit): Promise<ICommit> {
 		const endpoint = `/repos/${repo.fullName}/commits/${commit.sha}`;
 		const response = await GitHubController.get(endpoint);
@@ -59,7 +83,12 @@ export default class GitHubController {
 			}))
 		};
 	}
-	
+
+	/**
+	 * Gets all authors in a repo and their contributions
+	 * @param repo The repo to inspect
+	 * @param match If match is present, only file changes where the filename matches match will be counted
+	 */
 	public async getAuthors(repo: IRepo, match?: RegExp): Promise<IAuthorStatistics[]> {
 		const shortCommits: IShortCommit[] = await this.getCommits(repo);
 		const promises = shortCommits.map(commit => this.getCommitDetails(repo, commit));
@@ -95,6 +124,9 @@ export default class GitHubController {
 			if (response.status === 200) {
 				return response.data;
 			} else if (response.status === 202) {
+				// Waiting and trying again as GitHub will return 202 if the data exists,
+				// but can't return it yet
+				// https://developer.github.com/v3/repos/statistics/#a-word-about-caching
 				await this.sleep(1);
 				return this.get(endpoint, params);
 			}

@@ -67,6 +67,7 @@ export default class GitHubController {
 		return commits.map(commit => ({
 			sha: commit.sha,
 			authorEmail: commit.commit.author.email,
+			githubId: commit.author ? commit.author.login : ""
 		}));
 	}
 

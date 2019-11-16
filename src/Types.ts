@@ -29,6 +29,7 @@ export interface IActivity {
 export interface IShortCommit {
 	sha: string;
 	authorEmail: string;
+	githubId: string;
 }
 
 export interface ICommit extends IShortCommit {

@@ -68,7 +68,7 @@ export default class GitHubController {
 			sha: commit.sha,
 			authorEmail: commit.commit.author.email,
 			date: commit.commit.author.date,
-			githubId: commit.author ? commit.author.login : ""
+			githubId: commit.author ? commit.author.login : commit.commit.author.name
 		}));
 	}
 

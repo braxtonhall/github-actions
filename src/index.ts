@@ -2,7 +2,7 @@ import GitHubController from "./controller/GitHubController";
 import * as fs from "fs-extra";
 
 // This is a sample file. Just meant to show you how you might use the project
-(async () => {
+const example1 = async () => {
 	// Make a controller
 	const ghc = new GitHubController();
 	
@@ -15,23 +15,31 @@ import * as fs from "fs-extra";
 	const stats = await Promise.all(promises);
 
 	// Saving
-	const date = new Date();
-	const [year, month, day] = [date.getFullYear(), date.getMonth(), date.getDay()];
+	let date = new Date();
+	let [year, month, day] = [date.getFullYear(), date.getMonth(), date.getDay()];
 	await fs.outputFile(`./runs/${year}${month}${day}.json`, JSON.stringify(stats, null, "    "));
 	console.log("Done!");
-	
-	
+};
+
+const example2 = async() => {
+	// Make a controller
+	const ghc = new GitHubController();
+
 	// EXAMPLE 2 making a .csv file with the author emails for each team in the org
-	promises = repos.map(repo => (async() => ({
+	const repos = await ghc.listRepos(/^project_team/);
+	const commits = await Promise.all(repos.map(repo => (async() => ({
 		name: repo.name,
 		commits: await ghc.getCommits(repo, "October 8 2019", "October 29 2019")
-	}))());
-	const commits = await Promise.all(promises);
-	
+	}))()));
+
 	// Saving
+	let date = new Date();
+	let [year, month, day] = [date.getFullYear(), date.getMonth(), date.getDay()];
 	await Promise.all(commits.map((commit: any) => fs.outputFile(
-		`./runs/${year}${month}${day}/${commit.name}.csv`, 
+		`./runs/${year}${month}${day}/${commit.name}.csv`,
 		"SHA,DATE,ID,EMAIL\n" + commit.commits.map(c => `${c.sha},${c.date},${c.githubId},${c.authorEmail}`).join("\n"))
 	));
 	console.log("Done!");
-})();
+};
+
+example2();

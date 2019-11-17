@@ -90,6 +90,22 @@ export default class GitHubController {
 			}))
 		};
 	}
+	
+	public getAuthorsSince(repo: IRepo, since: string, match?: RegExp) {
+		return this._getAuthors(repo, since, undefined, match);
+	}
+	
+	public getAuthorsUntil(repo: IRepo, until: string, match?: RegExp) {
+		return this._getAuthors(repo, undefined, until, match);
+	}
+	
+	public getAuthorsBetween(repo: IRepo, since: string, until: string, match?: RegExp) {
+		return this._getAuthors(repo, undefined, until, match);
+	}
+	
+	public getAuthors(repo: IRepo, match?: RegExp) {
+		return this._getAuthors(repo, undefined, undefined, match);
+	}
 
 	/**
 	 * Gets all authors in a repo and their contributions
@@ -98,7 +114,7 @@ export default class GitHubController {
 	 * @param until Date to stop looking at commits
 	 * @param match If match is present, only file changes where the filename matches match will be counted
 	 */
-	public async getAuthors(repo: IRepo, since?: string, until?: string, match?: RegExp): Promise<IAuthorStatistics[]> {
+	private async _getAuthors(repo: IRepo, since?: string, until?: string, match?: RegExp): Promise<IAuthorStatistics[]> {
 		const shortCommits: IShortCommit[] = await this.getCommits(repo, since, until);
 		const promises = shortCommits.map(commit => this.getCommitDetails(repo, commit));
 		const commits = await Promise.all(promises);

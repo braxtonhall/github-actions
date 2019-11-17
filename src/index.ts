@@ -11,7 +11,7 @@ const example1 = async () => {
 	// Get every repo
 	const repos = await ghc.listRepos(/^project_team/);
 	// For each repo, get all the Authors, but only count contributions for files that end in .ts
-	let promises: any = repos.map(repo => (async() => ({name: repo.name, stats: await ghc.getAuthors(repo, undefined, undefined, /\.ts$/)}))());
+	let promises: any = repos.map(repo => (async() => ({name: repo.name, stats: await ghc.getAuthors(repo, /\.ts$/)}))());
 	const stats = await Promise.all(promises);
 
 	// Saving

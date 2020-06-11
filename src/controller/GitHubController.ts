@@ -1,5 +1,5 @@
 import {Config, ConfigKey} from "../Config";
-import {IAuthorStatistics, ICommit, IContributorStatistics, IRepo, IShortCommit} from "../Types";
+import {IAuthorStatistics, ICommit, IContributorStatistics, IIssue, IRepo, IShortCommit} from "../Types";
 import axios from "axios";
 
 export default class GitHubController {
@@ -29,7 +29,7 @@ export default class GitHubController {
 	 * Statistics ONLY apply to GitHub Enterprise users.
 	 * 		If an Author is pushing from an username not recognized by the Enterprise account
 	 * 		they will be omitted
-	 * This is the fastest way to get a large amount decent of data	
+	 * This is the fastest way to get a large amount decent of data
 	 * @param repo the repo to examine
 	 */
 	public async getStatistics(repo: IRepo): Promise<IContributorStatistics[]> {
@@ -57,7 +57,7 @@ export default class GitHubController {
 	public async getCommits(repo: IRepo, since?: string, until?: string): Promise<IShortCommit[]> {
 		since = since ? new Date(since).toISOString() : since;
 		until = until ? new Date(until).toISOString() : until;
-		
+
 		const endpoint = `/repos/${repo.fullName}/commits`;
 		let commits = [], data, i = 1;
 		do {
@@ -90,19 +90,29 @@ export default class GitHubController {
 			}))
 		};
 	}
-	
+
+	public async createIssue(repo: IRepo, issue: IIssue): Promise<boolean> {
+		const endpoint = `/repos/${repo.fullName}/issues`;
+		try {
+			await GitHubController.post(endpoint, issue);
+			return true;
+		} catch (err) {
+			return false;
+		}
+	}
+
 	public getAuthorsSince(repo: IRepo, since: string, match?: RegExp) {
 		return this._getAuthors(repo, since, undefined, match);
 	}
-	
+
 	public getAuthorsUntil(repo: IRepo, until: string, match?: RegExp) {
 		return this._getAuthors(repo, undefined, until, match);
 	}
-	
+
 	public getAuthorsBetween(repo: IRepo, since: string, until: string, match?: RegExp) {
 		return this._getAuthors(repo, undefined, until, match);
 	}
-	
+
 	public getAuthors(repo: IRepo, match?: RegExp) {
 		return this._getAuthors(repo, undefined, undefined, match);
 	}
@@ -137,31 +147,37 @@ export default class GitHubController {
 				}
 			}
 		}
-		
+
 		return Object.values(contributors);
 	}
-	
+
 	private static async get(endpoint: string, params?: any): Promise<any> {
 		const cf: Config = Config.getInstance();
-		try {
-			const response = await axios.get(`${cf.get(ConfigKey.gitHubHostName)}/api/v3${endpoint}`,
-				{headers: {Authorization: `token ${cf.get(ConfigKey.apiKey)}`}, params});
-			if (response.status === 200) {
-				return response.data;
-			} else if (response.status === 202) {
-				// Waiting and trying again as GitHub will return 202 if the data exists,
-				// but can't return it yet
-				// https://developer.github.com/v3/repos/statistics/#a-word-about-caching
-				await this.sleep(1);
-				return this.get(endpoint, params);
-			}
-		} catch (err) {
-			// suppress
-			console.error(err);
+		const response = await axios.get(`${cf.get(ConfigKey.gitHubHostName)}/api/v3${endpoint}`,
+			{headers: {Authorization: `token ${cf.get(ConfigKey.apiKey)}`}, params});
+		if (response.status === 200) {
+			return response.data;
+		} else if (response.status === 202) {
+			// Waiting and trying again as GitHub will return 202 if the data exists,
+			// but can't return it yet
+			// https://developer.github.com/v3/repos/statistics/#a-word-about-caching
+			await this.sleep(1);
+			return this.get(endpoint, params);
 		}
 		throw new Error("Failed to retrieve data!");
 	}
-	
+
+	private static async post(endpoint: string, data: any, params?: any): Promise<any> {
+		const cf: Config = Config.getInstance();
+		const response = await axios.post(`${cf.get(ConfigKey.gitHubHostName)}/api/v3${endpoint}`, data,
+			{headers: {Authorization: `token ${cf.get(ConfigKey.apiKey)}`}, params});
+		if (response.status === 201) {
+			return response.data;
+		} else {
+			throw new Error("Failed to post data!");
+		}
+	}
+
 	private static sleep(seconds: number): Promise<void> {
 		return new Promise(resolve => setTimeout(() => resolve(), seconds * 1000));
 	}

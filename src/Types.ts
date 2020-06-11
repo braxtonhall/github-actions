@@ -43,3 +43,11 @@ export interface IFile {
 	deletions: number;
 	status: string;
 }
+
+export interface IIssue {
+	title: string;
+	body: string;
+	assignees?: string[];
+	milestone?: number;
+	labels?: string[];
+}
